@@ -10,12 +10,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.tz.btmonitor.Greeting
 import com.tz.btmonitor.ui.screen.DeviceListScreen
 import com.tz.btmonitor.ui.screen.TileListScreen
 import com.tz.btmonitor.ui.theme.BtMonitorTheme
-
-
 
 @Composable
 fun BluetoothApp() {

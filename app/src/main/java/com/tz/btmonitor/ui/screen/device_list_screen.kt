@@ -1,5 +1,6 @@
 package com.tz.btmonitor.ui.screen
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -10,6 +11,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
@@ -17,28 +21,33 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.tz.btmonitor.model.BluetoothDevice
+import com.tz.btmonitor.model.Device
+import com.tz.btmonitor.ui.navigation.Screen
+import com.tz.btmonitor.viewmodel.BluetoothViewModel
+import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun DeviceListScreen(navController: NavController) {
-    // Dummy list of Bluetooth devices for demonstration
-    val devices = remember {
-        listOf(
-            BluetoothDevice("Device 1", "00:11:22:33:AA:BB", 80),
-            BluetoothDevice("Device 2", "11:22:33:44:BB:CC", 60),
-            BluetoothDevice("Device 3", "22:33:44:55:CC:DD", 40)
-        )
-    }
+    val coroutineScope = rememberCoroutineScope()
+    val viewModel: BluetoothViewModel = viewModel()
+    val devices by viewModel.devices.collectAsState()
+    val pagerState = rememberPagerState(pageCount = {
+        3
+    })
 
     Column(
         modifier = Modifier
@@ -47,23 +56,55 @@ fun DeviceListScreen(navController: NavController) {
         verticalArrangement = Arrangement.spacedBy(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // List of devices
-        LazyColumn {
-            items(devices) { device ->
-                DeviceListItem(
-                    deviceName = device.name,
-                    deviceAddress = device.address,
-                    signalStrength = device.signalStrength
-                )
+        // Pager for multiple pages
+        HorizontalPager(state = pagerState) { page ->
+            when (page) {
+                0 -> ChooseDevicePage(devices = devices)
+                1 -> ChooseBaudRatePage()
+                2 -> ChooseFileDestinationPage()
             }
         }
 
-        // Dropdown for baud rate selection
-        BaudRateDropDown()
-
-        // File destination selection
-        FileDestinationSelection()
+        // Button to navigate to the next screen
+        Button(
+            onClick = {
+                if (pagerState.currentPage == 2) {
+                    navController.navigate(Screen.TileList.route)
+                } else {
+                          coroutineScope.launch {
+                              pagerState.scrollToPage(pagerState.currentPage + 1)
+                          }
+                }
+            },
+            modifier = Modifier.padding(top = 16.dp)
+        ) {
+            Text(text = "Next")
+        }
     }
+}
+
+@Composable
+fun ChooseDevicePage(devices: List<Device>) {
+    LazyColumn {
+        items(devices) { device ->
+            DeviceListItem(
+                deviceName = device.name,
+                deviceAddress = device.address
+            )
+        }
+    }
+}
+
+@Composable
+fun ChooseBaudRatePage() {
+    // Implement Baud rate selection here
+    Text("Choose Baud Rate Page")
+}
+
+@Composable
+fun ChooseFileDestinationPage() {
+    // Implement File destination selection here
+    Text("Choose File Destination Page")
 }
 
 @Composable
@@ -124,8 +165,7 @@ fun FileDestinationSelection() {
 @Composable
 fun DeviceListItem(
     deviceName: String,
-    deviceAddress: String,
-    signalStrength: Int
+    deviceAddress: String
 ) {
     Card(
         modifier = Modifier
@@ -147,11 +187,6 @@ fun DeviceListItem(
                 text = "Address: $deviceAddress",
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.padding(bottom = 4.dp)
-            )
-            Text(
-                text = "Signal Strength: $signalStrength",
-                style = MaterialTheme.typography.bodyMedium,
-                color = if (signalStrength >= 50) Color.Green else Color.Red
             )
         }
     }
